@@ -8,23 +8,22 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from openpyxl import load_workbook
 
-
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
 def authentication():
     credentials = None
 
-    if os.path.exists('token.json'):
-        credentials = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists('token1.json'):
+        credentials = Credentials.from_authorized_user_file('token1.json', SCOPES)
 
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file('E:/PRACTICE/Testing/smith_apikey.json', SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file('E:/Developer/Python/Atul/Api/Florence_webappsinovation.json', SCOPES)
             credentials = flow.run_local_server(port=0)
 
-        with open('token.json', 'w') as token:
+        with open('token1.json', 'w') as token:
             token.write(credentials.to_json())
 
     return credentials
@@ -64,10 +63,10 @@ def send_message(service, user_id, message):
         print(f"An error occurred: {error}")
 
 if __name__ == "__main__":
-    excel_file = 'E:/PRACTICE/Testing/Testing_data.xlsx'
-    sheet_name = 'Sheet4'
+    excel_file = 'E:/Developer/Python/EmailData.xlsx'
+    sheet_name = 'Sheet2'
     email_column = 'A'
-    html_file = 'E:/PRACTICE/Testing/proposal.html'
+    html_file = 'E:/Developer/Python/Atul/Content/FlorenceHughesweb.html'
 
     recipients = read_email_addresses_from_excel(excel_file, sheet_name, email_column)
     html_content = read_html_content(html_file)
@@ -75,9 +74,22 @@ if __name__ == "__main__":
     credentials = authentication()
     service = build(serviceName='gmail', version='v1', credentials=credentials)
 
-    sender_email = 'ben.smith41349@gmail.com'  
-    subject = 'HTML Email with Form'
+    sender_email = 'florence@webappsinovations.com'
+    subject = 'Create a Mobile Responsive webpage'
+
+    successful_sends = 0
 
     for recipient_email in recipients:
         message = create_message(sender_email, recipient_email, subject, html_content, content_type='html')
-        send_message(service, 'me', message)
+        send_message_result = send_message(service, 'me', message)
+        if send_message_result:
+            successful_sends += 1
+
+    print(f"Total emails sent successfully: {successful_sends}")
+
+
+    try:
+        os.remove('token1.json')
+        print("token1.json deleted successfully.")
+    except Exception as e:
+        print(f"Error deleting token1.json: {e}")
