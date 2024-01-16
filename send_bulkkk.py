@@ -1,5 +1,4 @@
 import base64
-import mimetypes
 import os
 from email.message import EmailMessage
 from google.auth.transport.requests import Request
@@ -8,25 +7,23 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from openpyxl import load_workbook
-from docx import Document
-
 
 SCOPES = ['https://www.googleapis.com/auth/gmail.send']
 
 def authentication():
     credentials = None
 
-    if os.path.exists('token.json'):
-        credentials = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists('token1.json'):
+        credentials = Credentials.from_authorized_user_file('token1.json', SCOPES)
 
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
             credentials.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file('E:/GIT/API_key.json', SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file('E:/Developer/Python/Atul/Api/Florence_webappsinovation.json', SCOPES)
             credentials = flow.run_local_server(port=0)
 
-        with open('token.json', 'w') as token:
+        with open('token1.json', 'w') as token:
             token.write(credentials.to_json())
 
     return credentials
@@ -39,21 +36,21 @@ def read_email_addresses_from_excel(excel_file, sheet_name, email_column):
     
     return email_addresses
 
-def read_docx_content(file_path):
+def read_html_content(file_path):
     try:
-        doc = Document(file_path)
-        paragraphs = [paragraph.text for paragraph in doc.paragraphs]
-        return '\n'.join(paragraphs)
+        with open(file_path, 'r', encoding='utf-8') as file:
+            html_content = file.read()
+        return html_content
     except Exception as e:
-        print(f"Error reading Word document: {e}")
+        print(f"Error reading HTML file: {e}")
         return None
 
-def create_message(sender, to, subject, body):
+def create_message(sender, to, subject, body, content_type='text/plain'):
     mime_message = EmailMessage()
     mime_message['From'] = sender
     mime_message['To'] = to
     mime_message['Subject'] = subject
-    mime_message.set_content(body)
+    mime_message.set_content(body, subtype=content_type)
     
     return {'raw': base64.urlsafe_b64encode(mime_message.as_bytes()).decode()}
 
@@ -66,20 +63,33 @@ def send_message(service, user_id, message):
         print(f"An error occurred: {error}")
 
 if __name__ == "__main__":
-    excel_file = 'E:/PRACTICE/NumPy/data.xlsx'
-    sheet_name = 'Sheet3'
+    excel_file = 'E:/Developer/Python/EmailData.xlsx'
+    sheet_name = 'Sheet2'
     email_column = 'A'
-    wordpad_file = 'E:/PRACTICE/NumPy/Propposal.docx'
+    html_file = 'E:/Developer/Python/Atul/Content/Florence.html'
 
     recipients = read_email_addresses_from_excel(excel_file, sheet_name, email_column)
-    wordpad_content = read_docx_content(wordpad_file)
+    html_content = read_html_content(html_file)
 
     credentials = authentication()
     service = build(serviceName='gmail', version='v1', credentials=credentials)
 
-    sender_email = 'ben.smith41349@gmail.com'  
-    subject = 'Mobile responsive Website'
+    sender_email = 'no-reply@webappsinovations.com'
+    subject = 'Mobile Responsive Web-Designing and Development'
+
+    successful_sends = 0
 
     for recipient_email in recipients:
-        message = create_message(sender_email, recipient_email, subject, wordpad_content)
-        send_message(service, 'me', message)
+        message = create_message(sender_email, recipient_email, subject, html_content, content_type='html')
+        send_message_result = send_message(service, 'me', message)
+        if send_message_result:
+            successful_sends += 1
+
+    print(f"Total emails sent successfully: {successful_sends}")
+
+
+    try:
+        os.remove('token1.json')
+        print("token1.json deleted successfully.")
+    except Exception as e:
+        print(f"Error deleting token1.json: {e}")
